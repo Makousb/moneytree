@@ -1,0 +1,54 @@
+# Render blueprint: Node web app + Python analytics service + Postgres.
+# In the Render dashboard: New → Blueprint → pick this repo → Apply.
+# The Node app bootstraps its own schema on first boot, so no manual psql
+# step is needed. The app runs fine even if the analytics service is still
+# starting — those pages just degrade until it's up.
+
+services:
+  - type: web
+    name: moneytree
+    runtime: node
+    plan: free
+    # Must match the database + analytics region — internal addresses only
+    # resolve within a single region.
+    region: oregon
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: moneytree-db
+          property: connectionString
+      # Render's internal database connection doesn't require TLS.
+      - key: DB_SSL
+        value: "false"
+      # Internal address of the analytics service (host:port). config/env.js
+      # prepends http:// when the scheme is missing.
+      - key: ANALYTICS_URL
+        fromService:
+          type: web
+          name: moneytree-analytics
+          property: hostport
+
+  # Python (FastAPI) analytics service. Uses Docker so the Tesseract OCR
+  # engine can be installed for receipt scanning.
+  - type: web
+    name: moneytree-analytics
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./analytics/Dockerfile
+    dockerContext: ./analytics
+    healthCheckPath: /health
+
+databases:
+  - name: moneytree-db
+    plan: free
+    region: oregon
+    databaseName: moneytree
+    user: moneytree

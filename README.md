@@ -115,6 +115,18 @@ JavaScript (Chart.js).
 > public pages render, but nothing is persisted and you can't sign up.
 > Without the analytics service, everything except the Reports page works.
 
+## Deployment
+
+`render.yaml` is a [Render](https://render.com) blueprint that provisions
+everything in one click: the Node web app, the Python analytics service (built
+from `analytics/Dockerfile`, which bundles the Tesseract OCR engine), and a
+PostgreSQL database, all wired together.
+
+In the Render dashboard: **New → Blueprint**, pick this repo, and **Apply**.
+The web app generates its own `SESSION_SECRET`, reads `DATABASE_URL` from the
+provisioned database, and bootstraps its schema on first boot — no manual
+setup needed.
+
 ## Project structure
 
 ```

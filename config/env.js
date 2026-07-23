@@ -13,6 +13,15 @@ function getOptionalNumber(name, fallback) {
   return Number.isNaN(parsedValue) ? fallback : parsedValue;
 }
 
+// Render's `fromService … property: hostport` hands us "host:port" with no
+// scheme; internal service traffic is plain HTTP.
+function normalizeAnalyticsUrl(value) {
+  if (!value) {
+    return "http://localhost:8000";
+  }
+  return /^https?:\/\//.test(value) ? value : `http://${value}`;
+}
+
 function getSessionSecret() {
   if (process.env.SESSION_SECRET) {
     return process.env.SESSION_SECRET;
@@ -32,7 +41,7 @@ export const config = {
   port: getOptionalNumber("PORT", 3001),
   sessionSecret: getSessionSecret(),
   // Python FastAPI service that computes the Reports page insights.
-  analyticsUrl: process.env.ANALYTICS_URL || "http://localhost:8000",
+  analyticsUrl: normalizeAnalyticsUrl(process.env.ANALYTICS_URL),
   database: {
     host: process.env.DB_HOST,
     port: getOptionalNumber("DB_PORT", undefined),
