@@ -1,0 +1,110 @@
+<%- include("partials/header") %>
+
+<section class="page-head">
+  <h1>Recurring</h1>
+  <p class="muted">
+    Rent, salary, subscriptions — set them once and MoneyTree records them for
+    you automatically on schedule.
+  </p>
+</section>
+
+<div class="two-col">
+  <section class="card">
+    <h2>Schedule a recurring transaction</h2>
+    <form action="/recurring" method="POST" class="stacked-form">
+      <div class="segmented" role="radiogroup" aria-label="Transaction type">
+        <label>
+          <input type="radio" name="kind" value="expense" checked />
+          <span>💸 Expense</span>
+        </label>
+        <label>
+          <input type="radio" name="kind" value="income" />
+          <span>💰 Income</span>
+        </label>
+      </div>
+      <label>
+        Amount
+        <input type="number" name="amount" step="0.01" min="0.01" required />
+      </label>
+      <label>
+        Category
+        <select name="categoryId">
+          <option value="">Uncategorized</option>
+          <% categories.forEach((c) => { %>
+            <option value="<%= c.id %>"><%= c.icon %> <%= c.name %> (<%= c.kind %>)</option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Account
+        <select name="accountId">
+          <option value="">No account</option>
+          <% accounts.forEach((a) => { %>
+            <option value="<%= a.id %>"><%= a.name %></option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Frequency
+        <select name="frequency">
+          <% frequencies.forEach((f) => { %>
+            <option value="<%= f %>" <%= f === "monthly" ? "selected" : "" %>><%= f %></option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Next date
+        <input type="date" name="nextRun" value="<%= today %>" />
+        <small class="muted">The first date this should be recorded.</small>
+      </label>
+      <label>
+        Note (optional)
+        <input type="text" name="note" maxlength="200" placeholder="e.g. Rent, Netflix" />
+      </label>
+      <button type="submit" class="btn btn-primary">Schedule</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Your schedule</h2>
+      <a href="/transactions" class="link">All transactions →</a>
+    </div>
+    <% if (recurring.length === 0) { %>
+      <p class="empty-state">Nothing scheduled yet — add your first recurring transaction.</p>
+    <% } else { %>
+      <ul class="tx-list">
+        <% recurring.forEach((r) => { %>
+          <li class="tx-row <%= r.active ? "" : "is-paused" %>">
+            <span class="tx-icon"><%= r.category_icon || (r.kind === "income" ? "💰" : "🧾") %></span>
+            <span class="tx-meta">
+              <strong>
+                <%= r.note || r.category_name || (r.kind === "income" ? "Income" : "Expense") %>
+                <% if (!r.active) { %><span class="badge badge-warn">paused</span><% } %>
+              </strong>
+              <small class="muted">
+                every <%= { weekly: "week", monthly: "month", yearly: "year" }[r.frequency] %>
+                <%= r.active ? " · next " + formatDate(r.next_run_iso) : "" %>
+                <%= r.account_name ? " · " + r.account_name : "" %>
+              </small>
+            </span>
+            <span class="tx-amount <%= r.kind === "income" ? "positive" : "negative" %>">
+              <%= r.kind === "income" ? "+" : "−" %><%= money(r.amount) %>
+            </span>
+            <form action="/recurring/<%= r.id %>/toggle" method="POST" class="inline-form">
+              <input type="hidden" name="active" value="<%= r.active ? "false" : "true" %>" />
+              <button type="submit" class="btn btn-ghost btn-sm" title="<%= r.active ? "Pause" : "Resume" %>">
+                <%= r.active ? "⏸" : "▶" %>
+              </button>
+            </form>
+            <form action="/recurring/<%= r.id %>/delete" method="POST" class="inline-form">
+              <button type="submit" class="btn btn-ghost btn-sm" title="Delete">✕</button>
+            </form>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+</div>
+
+<%- include("partials/footer") %>

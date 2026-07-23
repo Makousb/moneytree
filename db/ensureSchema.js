@@ -84,6 +84,23 @@ const SCHEMA_SQL = `
     ocr_text TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+
+  -- Templates that auto-create transactions on a schedule (rent, salary,
+  -- subscriptions). Due ones are materialized lazily when the user loads the
+  -- app; next_run tracks the following occurrence. Amounts are base currency.
+  CREATE TABLE IF NOT EXISTS recurring_transactions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+    category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('expense', 'income')),
+    amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+    note TEXT,
+    frequency TEXT NOT NULL CHECK (frequency IN ('weekly', 'monthly', 'yearly')),
+    next_run DATE NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
 `;
 
 const DEFAULT_CATEGORIES = [

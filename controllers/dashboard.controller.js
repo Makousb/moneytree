@@ -9,12 +9,16 @@ import {
   toBudgetPayload,
   toGoalPayload
 } from "../services/analytics.js";
+import { materializeDueRecurring } from "../services/recurring.js";
 import { monthLabel, monthStart, today } from "../utils/dates.js";
 
 export async function showDashboard(req, res, next) {
   try {
     const user = req.session.user;
     const month = monthStart();
+
+    // Record any recurring transactions that have come due since last visit.
+    await materializeDueRecurring(user.id);
 
     const [summary, recent, budgets, goals] = await Promise.all([
       getMonthlySummary(user.id, month),

@@ -24,6 +24,36 @@ export function today() {
   return toISODate(new Date());
 }
 
+// Add n months, clamping the day to the target month's length so
+// "Jan 31 + 1 month" lands on Feb 28/29 rather than spilling into March.
+function addMonthsClamped(year, monthIndex, day, n) {
+  const firstOfTarget = new Date(year, monthIndex + n, 1);
+  const lastDay = new Date(
+    firstOfTarget.getFullYear(),
+    firstOfTarget.getMonth() + 1,
+    0
+  ).getDate();
+  return new Date(
+    firstOfTarget.getFullYear(),
+    firstOfTarget.getMonth(),
+    Math.min(day, lastDay)
+  );
+}
+
+// Next occurrence of a recurring date, as YYYY-MM-DD.
+export function nextOccurrence(isoDate, frequency) {
+  const [year, month, day] = isoDate.slice(0, 10).split("-").map(Number);
+  let result;
+  if (frequency === "weekly") {
+    result = new Date(year, month - 1, day + 7);
+  } else if (frequency === "yearly") {
+    result = addMonthsClamped(year, month - 1, day, 12);
+  } else {
+    result = addMonthsClamped(year, month - 1, day, 1);
+  }
+  return toISODate(result);
+}
+
 export function formatDate(value) {
   const date = value instanceof Date ? value : new Date(value);
   return date.toLocaleDateString("en-US", {

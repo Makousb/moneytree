@@ -663,6 +663,10 @@ input[type="file"] {
   border-bottom: none;
 }
 
+.tx-row.is-paused {
+  opacity: 0.55;
+}
+
 .tx-icon {
   display: inline-flex;
   align-items: center;

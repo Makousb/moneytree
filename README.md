@@ -41,11 +41,13 @@ JavaScript (Chart.js).
 - **Shopping patterns** — receipts feed the Reports page with frequent
   purchases, repeat merchants (visit cadence and average spend), weekday
   spending concentration, and same-day category correlations
+- **Recurring transactions** — schedule rent, salary, or subscriptions once
+  (weekly/monthly/yearly) and MoneyTree records them automatically when they
+  come due, catching up any missed occurrences; pause or delete anytime
 
 ### Roadmap
 
-- Recurring transactions (rent, salary, subscriptions)
-- Custom categories and per-user currency setting
+- Custom categories
 - CSV export
 - Transfers between accounts
 

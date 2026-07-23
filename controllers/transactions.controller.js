@@ -6,11 +6,15 @@ import {
   listRecentTransactions
 } from "../db/queries/transactions.js";
 import { toBase } from "../services/fx.js";
+import { materializeDueRecurring } from "../services/recurring.js";
 import { today } from "../utils/dates.js";
 
 export async function listTransactionsPage(req, res, next) {
   try {
     const userId = req.session.user.id;
+
+    // Record any recurring transactions that have come due since last visit.
+    await materializeDueRecurring(userId);
 
     const [transactions, accounts, categories] = await Promise.all([
       listRecentTransactions(userId),
