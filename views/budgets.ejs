@@ -1,0 +1,52 @@
+<%- include("partials/header") %>
+
+<section class="page-head">
+  <h1>Budgets</h1>
+  <p class="muted">Spending limits for <%= monthLabel %>.</p>
+</section>
+
+<%- include("partials/alerts") %>
+
+<div class="two-col">
+  <section class="card">
+    <h2>Set a budget</h2>
+    <p class="muted">Saving again for the same category updates its amount.</p>
+    <form action="/budgets" method="POST" class="stacked-form">
+      <label>
+        Category
+        <select name="categoryId" required>
+          <% expenseCategories.forEach((c) => { %>
+            <option value="<%= c.id %>"><%= c.icon %> <%= c.name %></option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Monthly limit
+        <input type="number" name="amount" step="0.01" min="0" required />
+      </label>
+      <button type="submit" class="btn btn-primary">Save budget</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>This month</h2>
+    <% if (budgets.length === 0) { %>
+      <p class="empty-state">No budgets yet. Set your first limit and give every shilling a job.</p>
+    <% } else { %>
+      <% budgets.forEach((b) => { %>
+        <% const ratio = Number(b.amount) > 0 ? Math.min(Number(b.spent) / Number(b.amount), 1) : 0; %>
+        <div class="budget-row">
+          <span><%= b.category_icon %> <%= b.category_name %></span>
+          <span class="muted">
+            <%= money(b.spent) %> of <%= money(b.amount) %>
+          </span>
+        </div>
+        <div class="progress">
+          <div class="progress-fill <%= ratio >= 1 ? "over" : "" %>" style="width: <%= Math.round(ratio * 100) %>%"></div>
+        </div>
+      <% }) %>
+    <% } %>
+  </section>
+</div>
+
+<%- include("partials/footer") %>

@@ -1,0 +1,107 @@
+<%- include("partials/header") %>
+
+<section class="page-head">
+  <h1>Hi <%= currentUser.name.split(" ")[0] %> 👋</h1>
+  <p class="muted"><%= monthLabel %> at a glance</p>
+</section>
+
+<%- include("partials/alerts") %>
+
+<section class="stat-grid">
+  <div class="card stat-card">
+    <span class="stat-icon">💰</span>
+    <span class="stat-body">
+      <span class="stat-label">Income</span>
+      <span class="stat-value positive"><%= money(income) %></span>
+    </span>
+  </div>
+  <div class="card stat-card">
+    <span class="stat-icon tint-red">💸</span>
+    <span class="stat-body">
+      <span class="stat-label">Expenses</span>
+      <span class="stat-value negative"><%= money(expenses) %></span>
+    </span>
+  </div>
+  <div class="card stat-card">
+    <span class="stat-icon">🌱</span>
+    <span class="stat-body">
+      <span class="stat-label">Net</span>
+      <span class="stat-value <%= income - expenses >= 0 ? "positive" : "negative" %>">
+        <%= money(income - expenses) %>
+      </span>
+    </span>
+  </div>
+</section>
+
+<div class="two-col">
+  <section class="card">
+    <div class="card-head">
+      <h2>Recent transactions</h2>
+      <a href="/transactions" class="link">View all →</a>
+    </div>
+    <% if (recent.length === 0) { %>
+      <p class="empty-state">No transactions yet. <a href="/transactions">Record your first one</a>.</p>
+    <% } else { %>
+      <ul class="tx-list">
+        <% recent.forEach((tx) => { %>
+          <li class="tx-row">
+            <span class="tx-icon"><%= tx.category_icon || "🧾" %></span>
+            <span class="tx-meta">
+              <strong><%= tx.category_name || "Uncategorized" %></strong>
+              <small class="muted"><%= formatDate(tx.occurred_on) %><%= tx.note ? " · " + tx.note : "" %></small>
+            </span>
+            <span class="tx-amount <%= tx.kind === "income" ? "positive" : "negative" %>">
+              <%= tx.kind === "income" ? "+" : "−" %><%= money(tx.amount) %>
+            </span>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Budgets</h2>
+      <a href="/budgets" class="link">Manage →</a>
+    </div>
+    <% if (budgets.length === 0) { %>
+      <p class="empty-state">No budgets for this month yet. <a href="/budgets">Set one</a>.</p>
+    <% } else { %>
+      <% budgets.forEach((b) => { %>
+        <% const ratio = Number(b.amount) > 0 ? Math.min(Number(b.spent) / Number(b.amount), 1) : 0; %>
+        <div class="budget-row">
+          <span><%= b.category_icon %> <%= b.category_name %></span>
+          <span class="muted">
+            <%= money(b.spent) %> / <%= money(b.amount) %>
+          </span>
+        </div>
+        <div class="progress">
+          <div class="progress-fill <%= ratio >= 1 ? "over" : "" %>" style="width: <%= Math.round(ratio * 100) %>%"></div>
+        </div>
+      <% }) %>
+    <% } %>
+
+    <div class="card-head" style="margin-top: 1.5rem;">
+      <h2>Goals</h2>
+      <a href="/goals" class="link">Manage →</a>
+    </div>
+    <% if (goals.length === 0) { %>
+      <p class="empty-state">Nothing you're saving toward yet. <a href="/goals">Plant a goal</a>.</p>
+    <% } else { %>
+      <% goals.forEach((g) => { %>
+        <% const ratio = Math.min(Number(g.saved_amount) / Number(g.target_amount), 1); %>
+        <div class="budget-row">
+          <span>🎯 <%= g.name %></span>
+          <span class="muted">
+            <%= money(g.saved_amount) %> / <%= money(g.target_amount) %>
+          </span>
+        </div>
+        <div class="progress">
+          <div class="progress-fill goal" style="width: <%= Math.round(ratio * 100) %>%"></div>
+        </div>
+      <% }) %>
+    <% } %>
+  </section>
+</div>
+
+<%- include("partials/footer") %>

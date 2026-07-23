@@ -1,0 +1,86 @@
+<%- include("partials/header") %>
+
+<section class="page-head">
+  <h1>Transactions</h1>
+  <p class="muted">Every expense and income, in one ledger.</p>
+</section>
+
+<div class="two-col">
+  <section class="card">
+    <h2>Add a transaction</h2>
+    <form action="/transactions" method="POST" class="stacked-form">
+      <div class="segmented" role="radiogroup" aria-label="Transaction type">
+        <label>
+          <input type="radio" name="kind" value="expense" checked />
+          <span>💸 Expense</span>
+        </label>
+        <label>
+          <input type="radio" name="kind" value="income" />
+          <span>💰 Income</span>
+        </label>
+      </div>
+      <label>
+        Amount
+        <input type="number" name="amount" step="0.01" min="0.01" required />
+      </label>
+      <label>
+        Category
+        <select name="categoryId">
+          <option value="">Uncategorized</option>
+          <% categories.forEach((c) => { %>
+            <option value="<%= c.id %>"><%= c.icon %> <%= c.name %> (<%= c.kind %>)</option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Account
+        <select name="accountId">
+          <option value="">No account</option>
+          <% accounts.forEach((a) => { %>
+            <option value="<%= a.id %>"><%= a.name %></option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Date
+        <input type="date" name="occurredOn" value="<%= today %>" />
+      </label>
+      <label>
+        Note (optional)
+        <input type="text" name="note" maxlength="200" placeholder="e.g. Lunch with Ada" />
+      </label>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>History</h2>
+    <% if (transactions.length === 0) { %>
+      <p class="empty-state">Nothing here yet — your ledger starts with the first entry.</p>
+    <% } else { %>
+      <ul class="tx-list">
+        <% transactions.forEach((tx) => { %>
+          <li class="tx-row">
+            <span class="tx-icon"><%= tx.category_icon || "🧾" %></span>
+            <span class="tx-meta">
+              <strong><%= tx.category_name || "Uncategorized" %></strong>
+              <small class="muted">
+                <%= formatDate(tx.occurred_on) %>
+                <%= tx.account_name ? " · " + tx.account_name : "" %>
+                <%= tx.note ? " · " + tx.note : "" %>
+              </small>
+            </span>
+            <span class="tx-amount <%= tx.kind === "income" ? "positive" : "negative" %>">
+              <%= tx.kind === "income" ? "+" : "−" %><%= money(tx.amount) %>
+            </span>
+            <form action="/transactions/<%= tx.id %>/delete" method="POST" class="inline-form">
+              <button type="submit" class="btn btn-ghost btn-sm" title="Delete">✕</button>
+            </form>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+</div>
+
+<%- include("partials/footer") %>

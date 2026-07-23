@@ -1,0 +1,88 @@
+<%- include("partials/header") %>
+
+<section class="page-head">
+  <h1>Review receipt</h1>
+  <p class="muted">Here's what was read off the photo — fix anything that looks wrong, then save.</p>
+</section>
+
+<div class="two-col">
+  <section class="card">
+    <h2><%= receipt.merchant || "Receipt" %></h2>
+    <img
+      src="/receipts/<%= receipt.id %>/image"
+      alt="Receipt photo"
+      class="receipt-image"
+    />
+    <% if ((receipt.items || []).length) { %>
+      <h3 class="items-heading">Items read from the receipt</h3>
+      <ul class="tx-list">
+        <% receipt.items.forEach((item) => { %>
+          <li class="tx-row">
+            <span class="tx-meta"><strong><%= item.name %></strong></span>
+            <span class="tx-amount">
+              <%= item.price != null ? money(item.price) : "" %>
+            </span>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+
+  <section class="card">
+    <h2>Save as expense</h2>
+    <form action="/receipts/<%= receipt.id %>/confirm" method="POST" class="stacked-form">
+      <label>
+        Amount
+        <input
+          type="number"
+          name="amount"
+          step="0.01"
+          min="0.01"
+          required
+          value="<%= receipt.total != null ? toDisplayNumber(receipt.total) : "" %>"
+        />
+      </label>
+      <label>
+        Category
+        <select name="categoryId">
+          <option value="">Uncategorized</option>
+          <% expenseCategories.forEach((c) => { %>
+            <option value="<%= c.id %>" <%= receipt.category_id === c.id ? "selected" : "" %>>
+              <%= c.icon %> <%= c.name %>
+            </option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Account
+        <select name="accountId">
+          <option value="">No account</option>
+          <% accounts.forEach((a) => { %>
+            <option value="<%= a.id %>"><%= a.name %></option>
+          <% }) %>
+        </select>
+      </label>
+      <label>
+        Date
+        <input
+          type="date"
+          name="occurredOn"
+          value="<%= receipt.purchased_on ? new Date(receipt.purchased_on).toLocaleDateString("en-CA") : "" %>"
+        />
+      </label>
+      <label>
+        Note
+        <input
+          type="text"
+          name="note"
+          maxlength="200"
+          value="<%= receipt.merchant ? "Receipt: " + receipt.merchant : "" %>"
+        />
+      </label>
+      <button type="submit" class="btn btn-primary">Save expense</button>
+      <a href="/receipts" class="btn btn-ghost">Back to receipts</a>
+    </form>
+  </section>
+</div>
+
+<%- include("partials/footer") %>

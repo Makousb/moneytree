@@ -1,0 +1,29 @@
+<%- include("../partials/header") %>
+
+<section class="auth-card card">
+  <h1>Welcome back</h1>
+  <p class="muted">Log in to keep your money growing.</p>
+
+  <form action="/auth/login" method="POST" class="stacked-form">
+    <label>
+      Email
+      <input type="email" name="email" required autocomplete="email" />
+    </label>
+    <label>
+      Password
+      <input
+        type="password"
+        name="password"
+        required
+        autocomplete="current-password"
+      />
+    </label>
+    <button type="submit" class="btn btn-primary">Log in</button>
+  </form>
+
+  <p class="muted">
+    New here? <a href="/auth/register">Create an account</a>
+  </p>
+</section>
+
+<%- include("../partials/footer") %>

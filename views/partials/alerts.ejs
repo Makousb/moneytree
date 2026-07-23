@@ -1,0 +1,32 @@
+<% if (typeof alerts !== "undefined" && alerts.length) { %>
+  <section class="alerts">
+    <% alerts.forEach((a) => { %>
+      <div class="alert-card <%= a.severity === "critical" ? "alert-critical" : "alert-warning" %>">
+        <span class="alert-icon"><%= a.severity === "critical" ? "🚨" : "⏰" %></span>
+        <div class="alert-body">
+          <strong><%= a.message %></strong>
+          <div class="alert-detail">
+            <%= formatCurrency(a.spent, displayCurrency) %> spent
+            (<%= a.pct_used %>% of budget) ·
+            <%= a.days_left %> days left ·
+            projected <%= formatCurrency(a.projected, displayCurrency) %>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+
+    <% if (goalImpact) { %>
+      <div class="alert-card alert-impact">
+        <span class="alert-icon">📉</span>
+        <div class="alert-body">
+          <strong>What this means for your goals</strong>
+          <ul>
+            <% goalImpact.messages.forEach((line) => { %>
+              <li><%= line %></li>
+            <% }) %>
+          </ul>
+        </div>
+      </div>
+    <% } %>
+  </section>
+<% } %>

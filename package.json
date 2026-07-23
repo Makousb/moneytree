@@ -1,0 +1,30 @@
+{
+  "name": "moneytree",
+  "version": "0.1.0",
+  "description": "Personal budgeting and financial planning app: expense tracking, monthly budgets, and savings goals, built with Express, EJS, and PostgreSQL.",
+  "type": "module",
+  "main": "app.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "dev": "concurrently -n web,analytics -c green,blue --kill-others \"node --watch app.js\" \"npm run analytics\"",
+    "analytics": "cd analytics && .venv\\Scripts\\python -m uvicorn app:app --port 8000"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "connect-flash": "^0.1.1",
+    "connect-pg-simple": "^10.0.0",
+    "dotenv": "^17.2.3",
+    "ejs": "^4.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.18.2",
+    "helmet": "^8.2.0",
+    "multer": "^2.2.0",
+    "pg": "^8.17.1"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}

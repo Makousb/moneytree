@@ -1,0 +1,46 @@
+<%- include("../partials/header") %>
+
+<section class="auth-card card">
+  <h1>Create your account</h1>
+  <p class="muted">Plant the seed. It takes less than a minute.</p>
+
+  <form action="/auth/register" method="POST" class="stacked-form">
+    <label>
+      Name
+      <input type="text" name="name" required maxlength="80" autocomplete="name" />
+    </label>
+    <label>
+      Email
+      <input type="email" name="email" required autocomplete="email" />
+    </label>
+    <label>
+      Password
+      <input
+        type="password"
+        name="password"
+        required
+        minlength="8"
+        autocomplete="new-password"
+      />
+      <small class="muted">At least 8 characters.</small>
+    </label>
+    <label>
+      Currency
+      <select name="currency">
+        <% currencies.forEach((c) => { %>
+          <option value="<%= c.code %>" <%= c.code === defaultCurrency ? "selected" : "" %>>
+            <%= c.symbol %> — <%= c.name %> (<%= c.code %>)
+          </option>
+        <% }) %>
+      </select>
+      <small class="muted">You can change this anytime in Settings.</small>
+    </label>
+    <button type="submit" class="btn btn-primary">Sign up</button>
+  </form>
+
+  <p class="muted">
+    Already have an account? <a href="/auth/login">Log in</a>
+  </p>
+</section>
+
+<%- include("../partials/footer") %>

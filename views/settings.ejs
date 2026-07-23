@@ -1,0 +1,110 @@
+<%- include("partials/header") %>
+
+<section class="page-head">
+  <h1>Settings</h1>
+  <p class="muted">Make MoneyTree feel like home.</p>
+</section>
+
+<div class="two-col">
+  <section class="card">
+    <h2>Display currency</h2>
+    <p class="muted">
+      Your account is kept in <strong><%= baseCurrency %></strong>. Choose any
+      currency below to view your money converted at the current exchange rate —
+      your stored amounts don't change.
+    </p>
+
+    <form action="/settings/currency" method="POST" class="stacked-form">
+      <label>
+        Show amounts in
+        <select name="currency" id="currency-select">
+          <% currencies.forEach((c) => { %>
+            <option
+              value="<%= c.code %>"
+              data-preview="<%= formatCurrency(sampleAmount, c.code) %>"
+              <%= currentUser.currency === c.code ? "selected" : "" %>
+            >
+              <%= c.symbol %> — <%= c.name %> (<%= c.code %>)
+            </option>
+          <% }) %>
+        </select>
+      </label>
+
+      <div class="currency-preview">
+        <span class="muted">Preview</span>
+        <strong id="currency-preview-value">
+          <%= formatCurrency(sampleAmount, currentUser.currency) %>
+        </strong>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Save currency</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Live exchange rate</h2>
+
+    <% if (baseCurrency === currentUser.currency) { %>
+      <p class="empty-state">
+        You're viewing in your account currency (<%= baseCurrency %>), so no
+        conversion is applied. Pick a different display currency to see live rates.
+      </p>
+    <% } else { %>
+      <div class="rate-hero">
+        <span class="rate-line">
+          1 <%= baseCurrency %> =
+          <strong><%= rateBaseToDisplay.toLocaleString("en-US", { maximumFractionDigits: 4 }) %>
+          <%= currentUser.currency %></strong>
+        </span>
+        <span class="muted rate-line">
+          1 <%= currentUser.currency %> =
+          <%= rateDisplayToBase.toLocaleString("en-US", { maximumFractionDigits: 4 }) %>
+          <%= baseCurrency %>
+        </span>
+      </div>
+    <% } %>
+
+    <ul class="tx-list" style="margin-top: 0.5rem;">
+      <li class="tx-row">
+        <span class="tx-icon">🕒</span>
+        <span class="tx-meta">
+          <strong>Rates updated</strong>
+          <small class="muted">
+            <%= ratesInfo.fetchedAt ? formatDate(ratesInfo.fetchedAt) : "unknown" %>
+            · source: <%= ratesInfo.source %>
+            <%= ratesInfo.stale ? " · may be out of date" : "" %>
+          </small>
+        </span>
+        <% if (ratesInfo.stale) { %>
+          <span class="badge badge-warn">stale</span>
+        <% } else { %>
+          <span class="badge badge-done">live</span>
+        <% } %>
+      </li>
+    </ul>
+
+    <form action="/settings/fx/refresh" method="POST" class="inline-form" style="margin-top: 0.75rem;">
+      <button type="submit" class="btn btn-ghost btn-sm">🔄 Refresh rates</button>
+    </form>
+
+    <p class="muted" style="margin-top: 0.9rem;">
+      Rates are indicative and for display only — MoneyTree never moves money.
+      Manage your wallets on the <a href="/accounts">Accounts</a> page.
+    </p>
+  </section>
+</div>
+
+<script>
+  // Live-preview the selected currency before saving.
+  (function () {
+    const select = document.getElementById("currency-select");
+    const preview = document.getElementById("currency-preview-value");
+    if (!select || !preview) return;
+    select.addEventListener("change", () => {
+      const option = select.options[select.selectedIndex];
+      preview.textContent = option.dataset.preview;
+    });
+  })();
+</script>
+
+<%- include("partials/footer") %>

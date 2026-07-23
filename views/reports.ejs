@@ -1,0 +1,131 @@
+<%- include("partials/header") %>
+
+<section class="page-head">
+  <h1>Reports</h1>
+  <p class="muted">Insights for <%= monthLabel %>, computed by the analytics service.</p>
+</section>
+
+<%- include("partials/alerts") %>
+
+<% if (!report) { %>
+  <section class="card">
+    <h2>Analytics service is offline</h2>
+    <p class="muted">
+      The Reports page is powered by MoneyTree's Python analytics service,
+      which isn't reachable right now. Start it and refresh:
+    </p>
+    <pre class="code-block">cd analytics
+uvicorn app:app --port 8000</pre>
+    <p class="muted">
+      Setup instructions are in the README. The rest of the app works normally
+      without it.
+    </p>
+  </section>
+<% } else { %>
+  <section class="stat-grid">
+    <div class="card stat-card">
+      <span class="stat-icon tint-red">💸</span>
+      <span class="stat-body">
+        <span class="stat-label">Spent so far</span>
+        <span class="stat-value negative"><%= formatCurrency(report.forecast.total_spent, displayCurrency) %></span>
+      </span>
+    </div>
+    <div class="card stat-card">
+      <span class="stat-icon">📅</span>
+      <span class="stat-body">
+        <span class="stat-label">Daily average</span>
+        <span class="stat-value"><%= formatCurrency(report.forecast.daily_average, displayCurrency) %></span>
+      </span>
+    </div>
+    <div class="card stat-card">
+      <span class="stat-icon">🔮</span>
+      <span class="stat-body">
+        <span class="stat-label">Projected month-end</span>
+        <span class="stat-value"><%= formatCurrency(report.forecast.projected, displayCurrency) %></span>
+        <small class="muted"><%= report.forecast.days_left %> days left</small>
+      </span>
+    </div>
+  </section>
+
+  <section class="card" style="margin-bottom: 1.25rem;">
+    <h2>Observations</h2>
+    <ul class="insight-list">
+      <% report.observations.forEach((line) => { %>
+        <li><%= line %></li>
+      <% }) %>
+    </ul>
+  </section>
+
+  <div class="two-col charts-col">
+    <section class="card">
+      <h2>Income vs expenses — last 6 months</h2>
+      <div class="chart-wrap">
+        <canvas id="trendChart" aria-label="Monthly income and expenses line chart"></canvas>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Spending by category — this month</h2>
+      <% if (report.by_category.length === 0) { %>
+        <p class="empty-state">No expenses this month yet — the chart will grow with your ledger.</p>
+      <% } else { %>
+        <div class="chart-wrap">
+          <canvas id="categoryChart" aria-label="Spending by category bar chart"></canvas>
+        </div>
+      <% } %>
+    </section>
+  </div>
+
+  <% const shopping = report.shopping || { frequent_items: [], frequent_merchants: [], patterns: [] }; %>
+  <% if (shopping.frequent_items.length || shopping.frequent_merchants.length || shopping.patterns.length) { %>
+    <section class="card" style="margin-top: 1.25rem;">
+      <h2>Shopping patterns</h2>
+      <p class="muted">Learned from your uploaded receipts and spending history.</p>
+      <div class="patterns-grid">
+        <% if (shopping.frequent_merchants.length) { %>
+          <div>
+            <h3 class="items-heading">Places you keep going back to</h3>
+            <ul class="pattern-list">
+              <% shopping.frequent_merchants.forEach((m) => { %>
+                <li>
+                  🏪 <strong><%= m.merchant %></strong> — <%= m.visits %> visits<%=
+                    m.avg_total != null ? ", avg " + formatCurrency(m.avg_total, displayCurrency) : "" %><%=
+                    m.every_days ? ", about every " + m.every_days + " days" : "" %>
+                </li>
+              <% }) %>
+            </ul>
+          </div>
+        <% } %>
+        <% if (shopping.frequent_items.length) { %>
+          <div>
+            <h3 class="items-heading">Frequent purchases</h3>
+            <ul class="pattern-list">
+              <% shopping.frequent_items.forEach((item) => { %>
+                <li>
+                  🛒 <strong><%= item.name %></strong> — bought <%= item.count %> times<%=
+                    item.avg_price != null ? ", avg " + formatCurrency(item.avg_price, displayCurrency) : "" %>
+                </li>
+              <% }) %>
+            </ul>
+          </div>
+        <% } %>
+        <% if (shopping.patterns.length) { %>
+          <div>
+            <h3 class="items-heading">Patterns &amp; correlations</h3>
+            <ul class="pattern-list">
+              <% shopping.patterns.forEach((line) => { %>
+                <li>🔍 <%= line %></li>
+              <% }) %>
+            </ul>
+          </div>
+        <% } %>
+      </div>
+    </section>
+  <% } %>
+
+  <script>window.MONEYTREE_REPORT = <%- reportJson %>;</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="/js/reports.js"></script>
+<% } %>
+
+<%- include("partials/footer") %>

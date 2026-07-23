@@ -1,0 +1,53 @@
+<%- include("partials/header") %>
+
+<section class="page-head">
+  <h1>Accounts</h1>
+  <p class="muted">Your wallets — balances update as you record transactions.</p>
+</section>
+
+<div class="two-col">
+  <section class="card">
+    <h2>Add an account</h2>
+    <form action="/accounts" method="POST" class="stacked-form">
+      <label>
+        Name
+        <input type="text" name="name" required maxlength="80" placeholder="e.g. M-Pesa" />
+      </label>
+      <label>
+        Type
+        <select name="type">
+          <% accountTypes.forEach((t) => { %>
+            <option value="<%= t %>"><%= t.replace("_", " ") %></option>
+          <% }) %>
+        </select>
+      </label>
+      <button type="submit" class="btn btn-primary">Add account</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Your wallets</h2>
+    <% if (accounts.length === 0) { %>
+      <p class="empty-state">No accounts yet — add your first wallet.</p>
+    <% } else { %>
+      <ul class="tx-list">
+        <% accounts.forEach((a) => { %>
+          <li class="tx-row">
+            <span class="tx-icon">
+              <%= { cash: "💵", bank: "🏦", mobile_money: "📱", credit_card: "💳" }[a.type] || "👛" %>
+            </span>
+            <span class="tx-meta">
+              <strong><%= a.name %></strong>
+              <small class="muted"><%= a.type.replace("_", " ") %></small>
+            </span>
+            <span class="tx-amount <%= Number(a.balance) >= 0 ? "positive" : "negative" %>">
+              <%= money(a.balance) %>
+            </span>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </section>
+</div>
+
+<%- include("partials/footer") %>

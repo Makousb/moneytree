@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %> · MoneyTree</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌳</text></svg>" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/css/main.css" />
+</head>
+<body>
+  <% const navClass = (href) => (currentPath === href || (href !== "/" && currentPath.startsWith(href)) ? "active" : ""); %>
+  <header class="site-header">
+    <a class="brand" href="/">🌳 MoneyTree</a>
+    <nav class="site-nav">
+      <% if (currentUser) { %>
+        <a href="/dashboard" class="<%= navClass("/dashboard") %>">Dashboard</a>
+        <a href="/transactions" class="<%= navClass("/transactions") %>">Transactions</a>
+        <a href="/receipts" class="<%= navClass("/receipts") %>">Receipts</a>
+        <a href="/budgets" class="<%= navClass("/budgets") %>">Budgets</a>
+        <a href="/goals" class="<%= navClass("/goals") %>">Goals</a>
+        <a href="/reports" class="<%= navClass("/reports") %>">Reports</a>
+        <a href="/accounts" class="<%= navClass("/accounts") %>">Accounts</a>
+        <a href="/settings" class="<%= navClass("/settings") %>" title="Settings">⚙️</a>
+        <form action="/auth/logout" method="POST" class="inline-form">
+          <button type="submit" class="btn btn-ghost btn-sm">Log out</button>
+        </form>
+      <% } else { %>
+        <a href="/auth/login" class="<%= navClass("/auth/login") %>">Log in</a>
+        <a href="/auth/register" class="btn btn-primary">Sign up</a>
+      <% } %>
+    </nav>
+  </header>
+
+  <% if (!dbReady) { %>
+    <div class="flash flash-warn">
+      Running without a database — nothing will be saved. Copy .env.example to .env and point it at PostgreSQL.
+    </div>
+  <% } %>
+  <% if (success && success.length) { %>
+    <div class="flash flash-success"><%= success[0] %></div>
+  <% } %>
+  <% if (error && error.length) { %>
+    <div class="flash flash-error"><%= error[0] %></div>
+  <% } %>
+
+  <main class="container">

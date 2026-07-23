@@ -1,0 +1,56 @@
+<%- include("partials/header") %>
+
+<section class="page-head">
+  <h1>Savings Goals</h1>
+  <p class="muted">The big things you're growing toward.</p>
+</section>
+
+<div class="two-col">
+  <section class="card">
+    <h2>New goal</h2>
+    <form action="/goals" method="POST" class="stacked-form">
+      <label>
+        Name
+        <input type="text" name="name" required maxlength="80" placeholder="e.g. Emergency fund" />
+      </label>
+      <label>
+        Target amount
+        <input type="number" name="targetAmount" step="0.01" min="0.01" required />
+      </label>
+      <label>
+        Target date (optional)
+        <input type="date" name="targetDate" />
+      </label>
+      <button type="submit" class="btn btn-primary">Plant goal</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Your goals</h2>
+    <% if (goals.length === 0) { %>
+      <p class="empty-state">No goals yet. What are you saving for?</p>
+    <% } else { %>
+      <% goals.forEach((g) => { %>
+        <% const ratio = Math.min(Number(g.saved_amount) / Number(g.target_amount), 1); %>
+        <div class="goal-block">
+          <div class="budget-row">
+            <span>🎯 <strong><%= g.name %></strong></span>
+            <span class="muted">
+              <%= money(g.saved_amount) %> of <%= money(g.target_amount) %>
+              <%= g.target_date ? " · by " + formatDate(g.target_date) : "" %>
+            </span>
+          </div>
+          <div class="progress">
+            <div class="progress-fill goal" style="width: <%= Math.round(ratio * 100) %>%"></div>
+          </div>
+          <form action="/goals/<%= g.id %>/contribute" method="POST" class="inline-form contribute-form">
+            <input type="number" name="amount" step="0.01" min="0.01" placeholder="Amount" required />
+            <button type="submit" class="btn btn-ghost btn-sm">Add 💧</button>
+          </form>
+        </div>
+      <% }) %>
+    <% } %>
+  </section>
+</div>
+
+<%- include("partials/footer") %>
