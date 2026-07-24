@@ -1,0 +1,115 @@
+<%- include("partials/header") %>
+
+<section class="page-head">
+  <h1>Loans</h1>
+  <p class="muted">
+    Track what you owe, what you've paid, and the interest piling up —
+    then <a href="/loans/plan" class="link">build a payoff plan →</a>
+  </p>
+</section>
+
+<% if (loans.length) { %>
+  <section class="stat-grid">
+    <div class="card stat-card">
+      <span class="stat-icon tint-red">🏦</span>
+      <span class="stat-body">
+        <span class="stat-label">Total owed</span>
+        <span class="stat-value negative"><%= money(totals.owed) %></span>
+      </span>
+    </div>
+    <div class="card stat-card">
+      <span class="stat-icon">✅</span>
+      <span class="stat-body">
+        <span class="stat-label">Total paid</span>
+        <span class="stat-value positive"><%= money(totals.paid) %></span>
+      </span>
+    </div>
+    <div class="card stat-card">
+      <span class="stat-icon tint-red">📈</span>
+      <span class="stat-body">
+        <span class="stat-label">Interest / month</span>
+        <span class="stat-value"><%= money(totals.monthlyInterest) %></span>
+      </span>
+    </div>
+  </section>
+<% } %>
+
+<div class="two-col">
+  <section class="card">
+    <h2>Add a loan</h2>
+    <form action="/loans" method="POST" class="stacked-form">
+      <label>
+        Name
+        <input type="text" name="name" required maxlength="80" placeholder="e.g. Car loan" />
+      </label>
+      <label>
+        Lender (optional)
+        <input type="text" name="lender" maxlength="80" placeholder="e.g. Equity Bank" />
+      </label>
+      <label>
+        Current balance owed
+        <input type="number" name="principal" step="0.01" min="0.01" required />
+        <small class="muted">What you owe now (or the amount borrowed for a new loan).</small>
+      </label>
+      <label>
+        Interest rate (APR %)
+        <input type="number" name="apr" step="0.01" min="0" placeholder="e.g. 14" />
+      </label>
+      <label>
+        Minimum monthly payment
+        <input type="number" name="minimumPayment" step="0.01" min="0" placeholder="optional" />
+      </label>
+      <label>
+        Tracking since
+        <input type="date" name="startDate" value="<%= today %>" />
+        <small class="muted">Interest is estimated from this date.</small>
+      </label>
+      <button type="submit" class="btn btn-primary">Add loan</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Your loans</h2>
+    <% if (loans.length === 0) { %>
+      <p class="empty-state">No loans tracked yet — add one to see your payoff picture.</p>
+    <% } else { %>
+      <% loans.forEach((loan) => { %>
+        <div class="loan-block">
+          <div class="budget-row">
+            <span>
+              <strong><%= loan.name %></strong>
+              <% if (loan.metrics.isPaidOff) { %><span class="badge badge-done">paid off</span><% } %>
+              <br /><small class="muted">
+                <%= loan.lender ? loan.lender + " · " : "" %><%= Number(loan.apr) %>% APR
+              </small>
+            </span>
+            <span style="text-align: right;">
+              <strong class="negative"><%= money(loan.metrics.balance) %></strong>
+              <br /><small class="muted">owed</small>
+            </span>
+          </div>
+          <div class="progress">
+            <div class="progress-fill goal" style="width: <%= Math.round(loan.metrics.progressPct) %>%"></div>
+          </div>
+          <div class="budget-row" style="margin-top: 0.4rem;">
+            <small class="muted">Paid <%= money(loan.metrics.totalPaid) %></small>
+            <small class="muted">≈ <%= money(loan.metrics.monthlyInterest) %> interest/mo</small>
+          </div>
+
+          <% if (!loan.metrics.isPaidOff) { %>
+            <form action="/loans/<%= loan.id %>/payments" method="POST" class="inline-form loan-pay-form">
+              <input type="number" name="amount" step="0.01" min="0.01" placeholder="Payment" required />
+              <input type="date" name="paidOn" value="<%= today %>" />
+              <button type="submit" class="btn btn-ghost btn-sm">Log payment</button>
+            </form>
+          <% } %>
+          <form action="/loans/<%= loan.id %>/delete" method="POST" class="inline-form">
+            <button type="submit" class="btn btn-ghost btn-sm" title="Delete loan">✕ Remove</button>
+          </form>
+        </div>
+      <% }) %>
+    <% } %>
+  </section>
+</div>
+
+<%- include("partials/footer") %>

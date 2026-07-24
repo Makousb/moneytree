@@ -45,6 +45,11 @@ export function parseReceipt(payload) {
   return postJson("/receipts/parse", payload, 30000);
 }
 
+// Loan payoff plan: what to cut, and an avalanche schedule to debt-free.
+export function getLoanPlan(payload) {
+  return postJson("/loans/plan", payload);
+}
+
 export function toBudgetPayload(budgets) {
   return budgets.map((b) => ({
     category: b.category_name,

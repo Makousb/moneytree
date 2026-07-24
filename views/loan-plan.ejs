@@ -1,0 +1,126 @@
+<%- include("partials/header") %>
+
+<section class="page-head">
+  <h1>Payoff plan</h1>
+  <p class="muted">
+    A route out of debt — <a href="/loans" class="link">← back to loans</a>
+  </p>
+</section>
+
+<% if (!hasLoans) { %>
+  <section class="card">
+    <p class="empty-state">
+      No loans to plan for. <a href="/loans">Add a loan</a> and MoneyTree will
+      build you a payoff strategy.
+    </p>
+  </section>
+<% } else if (!plan) { %>
+  <section class="card">
+    <h2>Analytics service is offline</h2>
+    <p class="muted">
+      The payoff plan is computed by MoneyTree's Python analytics service, which
+      isn't reachable right now. Start it and refresh:
+    </p>
+    <pre class="code-block">npm run analytics</pre>
+  </section>
+<% } else if (!plan.has_debt) { %>
+  <section class="card">
+    <p class="empty-state">🎉 You're debt-free — nothing to pay off. Nice work!</p>
+  </section>
+<% } else { %>
+  <section class="stat-grid">
+    <div class="card stat-card">
+      <span class="stat-icon tint-red">🏦</span>
+      <span class="stat-body">
+        <span class="stat-label">Total debt</span>
+        <span class="stat-value negative"><%= formatCurrency(plan.total_debt, displayCurrency) %></span>
+      </span>
+    </div>
+    <div class="card stat-card">
+      <span class="stat-icon">✂️</span>
+      <span class="stat-body">
+        <span class="stat-label">Freed by cuts / mo</span>
+        <span class="stat-value positive"><%= formatCurrency(plan.freed_monthly, displayCurrency) %></span>
+      </span>
+    </div>
+    <div class="card stat-card">
+      <span class="stat-icon">🎯</span>
+      <span class="stat-body">
+        <span class="stat-label">Debt-free by</span>
+        <span class="stat-value"><%= plan.debt_free_date || "—" %></span>
+        <% if (plan.debt_free_months) { %><small class="muted"><%= plan.debt_free_months %> months</small><% } %>
+      </span>
+    </div>
+  </section>
+
+  <section class="card" style="margin-bottom: 1.25rem;">
+    <h2>The plan</h2>
+    <ul class="insight-list">
+      <% plan.messages.forEach((line) => { %>
+        <li><%= line %></li>
+      <% }) %>
+    </ul>
+  </section>
+
+  <div class="two-col">
+    <section class="card">
+      <h2>What to cut</h2>
+      <p class="muted">Trim these to free up <%= formatCurrency(plan.freed_monthly, displayCurrency) %> a month.</p>
+      <% if (plan.cuts.length === 0) { %>
+        <p class="empty-state">No obvious cuts found — your spending already looks lean. Add an extra amount below to speed things up.</p>
+      <% } else { %>
+        <ul class="tx-list">
+          <% plan.cuts.forEach((cut) => { %>
+            <li class="tx-row">
+              <span class="tx-icon"><%= cut.icon %></span>
+              <span class="tx-meta">
+                <strong><%= cut.category %></strong>
+                <small class="muted"><%= cut.reason %> · now <%= formatCurrency(cut.current, displayCurrency) %>/mo</small>
+              </span>
+              <span class="tx-amount positive">−<%= formatCurrency(cut.suggested_cut, displayCurrency) %></span>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+      <form action="/loans/plan" method="GET" class="inline-form" style="margin-top: 1rem;">
+        <label style="flex: 1;">
+          <small class="muted">Add extra per month</small>
+          <input type="number" name="extra" step="0.01" min="0" value="<%= extraInput %>" placeholder="0" />
+        </label>
+        <button type="submit" class="btn btn-ghost btn-sm">Recalculate</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Payoff order</h2>
+      <p class="muted">Highest interest first (the avalanche method) saves the most.</p>
+      <ul class="tx-list">
+        <% plan.loans_ordered.forEach((loan) => { %>
+          <li class="tx-row">
+            <span class="tx-icon"><%= loan.payoff_order %></span>
+            <span class="tx-meta">
+              <strong><%= loan.name %></strong>
+              <small class="muted">
+                <%= formatCurrency(loan.balance, displayCurrency) %> · <%= loan.apr %>% APR
+                <%= loan.payoff_date ? " · clear by " + loan.payoff_date : "" %>
+              </small>
+            </span>
+          </li>
+        <% }) %>
+      </ul>
+
+      <% if (plan.interest_saved != null && plan.interest_saved > 0) { %>
+        <div class="alert-card alert-impact" style="margin-top: 1rem;">
+          <span class="alert-icon">💡</span>
+          <div class="alert-body">
+            <strong>You save <%= formatCurrency(plan.interest_saved, displayCurrency) %> in interest</strong>
+            versus paying only the minimums.
+          </div>
+        </div>
+      <% } %>
+    </section>
+  </div>
+<% } %>
+
+<%- include("partials/footer") %>

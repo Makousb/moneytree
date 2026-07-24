@@ -100,6 +100,29 @@ class ReceiptParseRequest(BaseModel):
     today: str  # fallback purchase date
 
 
+class LoanForPlan(BaseModel):
+    name: str
+    balance: float
+    apr: float = 0.0
+    min_payment: float = 0.0
+
+
+class CategorySpend(BaseModel):
+    name: str
+    icon: str = "🧾"
+    monthly_avg: float = 0.0
+    budget: float | None = None
+
+
+class LoanPlanRequest(BaseModel):
+    today: str
+    currency: str = "USD"
+    rate: float = 1.0
+    loans: list[LoanForPlan] = []
+    categories: list[CategorySpend] = []
+    extra_monthly: float = 0.0  # optional extra the user wants to add
+
+
 # Symbol + decimal places per currency, mirroring utils/currencies.js so the
 # analytics messages read the same as the rest of the app ("KSh 1,234.50").
 CURRENCY_SYMBOLS = {
@@ -623,4 +646,190 @@ def insights(req: InsightsRequest):
         "alerts": budget_alerts["alerts"],
         "goal_impact": budget_alerts["goal_impact"],
         "shopping": compute_shopping_patterns(req.transactions, req.receipts),
+    }
+
+
+# Categories treated as flexible enough to trim toward loan repayment.
+DISCRETIONARY = {"Food & Dining", "Entertainment", "Shopping", "Other"}
+DISCRETIONARY_TRIM = 0.25  # suggest cutting a quarter of discretionary spend
+PAYOFF_CAP_MONTHS = 600
+
+
+def compute_cuts(categories: list[CategorySpend], cur: str):
+    """Find monthly savings by cutting over-budget and discretionary spend."""
+    cuts = []
+    for c in categories:
+        avg = c.monthly_avg
+        if avg <= 0:
+            continue
+        if c.budget is not None and avg > c.budget:
+            cut = avg - c.budget
+            reason = f"running {fmt(cut, cur)} over its {fmt(c.budget, cur)} budget"
+        elif c.name in DISCRETIONARY:
+            cut = avg * DISCRETIONARY_TRIM
+            reason = "discretionary — trim about a quarter"
+        else:
+            continue
+        if cut >= 1:
+            cuts.append(
+                {
+                    "category": c.name,
+                    "icon": c.icon,
+                    "current": round(avg, 2),
+                    "suggested_cut": round(cut, 2),
+                    "reason": reason,
+                }
+            )
+    cuts.sort(key=lambda x: -x["suggested_cut"])
+    return cuts
+
+
+def simulate_avalanche(loans: list[dict], available: float):
+    """Pay minimums on all loans, throw every spare cent at the highest-APR
+    loan first. Returns months to debt-free, total interest, and per-loan
+    payoff month — or None if it never clears within the cap."""
+    work = [dict(l) for l in sorted(loans, key=lambda l: -l["apr"])]
+    months = 0
+    total_interest = 0.0
+    payoff_month = {}
+
+    while any(l["balance"] > 0.005 for l in work) and months < PAYOFF_CAP_MONTHS:
+        months += 1
+        for l in work:
+            if l["balance"] > 0:
+                interest = l["balance"] * l["apr"] / 100 / 12
+                l["balance"] += interest
+                total_interest += interest
+        pool = available
+        for l in work:  # minimums first
+            if l["balance"] > 0 and pool > 0:
+                pay = min(l["min_payment"], l["balance"], pool)
+                l["balance"] -= pay
+                pool -= pay
+        for l in work:  # avalanche: leftover to highest APR still owing
+            if pool <= 0:
+                break
+            if l["balance"] > 0:
+                pay = min(pool, l["balance"])
+                l["balance"] -= pay
+                pool -= pay
+        for l in work:
+            if l["balance"] <= 0.005 and l["name"] not in payoff_month:
+                payoff_month[l["name"]] = months
+                l["balance"] = 0
+
+    if any(l["balance"] > 0.005 for l in work):
+        return None
+    return {"months": months, "total_interest": total_interest, "payoff_month": payoff_month}
+
+
+@app.post("/loans/plan")
+def loans_plan(req: LoanPlanRequest):
+    cur = req.currency
+    rate = req.rate
+    today = date.fromisoformat(req.today)
+
+    loans = [
+        {
+            "name": l.name,
+            "balance": l.balance * rate,
+            "apr": l.apr,
+            "min_payment": l.min_payment * rate,
+        }
+        for l in req.loans
+        if l.balance * rate > 0.005
+    ]
+    total_debt = sum(l["balance"] for l in loans)
+
+    if not loans:
+        return {"has_debt": False, "messages": ["No outstanding loans — you're debt-free! 🎉"]}
+
+    categories = [
+        CategorySpend(
+            name=c.name,
+            icon=c.icon,
+            monthly_avg=c.monthly_avg * rate,
+            budget=None if c.budget is None else c.budget * rate,
+        )
+        for c in req.categories
+    ]
+
+    cuts = compute_cuts(categories, cur)
+    freed = sum(c["suggested_cut"] for c in cuts)
+    extra = req.extra_monthly * rate
+    total_minimums = sum(l["min_payment"] for l in loans)
+    available = total_minimums + freed + extra
+
+    plan = simulate_avalanche(loans, available)
+    baseline = simulate_avalanche(loans, total_minimums) if total_minimums > 0 else None
+
+    # Order loans by APR (avalanche priority) with their payoff month.
+    ordered = []
+    for l in sorted(loans, key=lambda l: -l["apr"]):
+        month_no = plan["payoff_month"].get(l["name"]) if plan else None
+        payoff_date = None
+        if month_no:
+            d = date(today.year, today.month, 1)
+            m = today.month - 1 + month_no
+            payoff_date = date(today.year + m // 12, m % 12 + 1, 1).strftime("%b %Y")
+        ordered.append(
+            {
+                "name": l["name"],
+                "balance": round(l["balance"], 2),
+                "apr": l["apr"],
+                "min_payment": round(l["min_payment"], 2),
+                "payoff_order": len(ordered) + 1,
+                "payoff_date": payoff_date,
+            }
+        )
+
+    messages = [
+        f"You owe {fmt(total_debt, cur)} across {len(loans)} "
+        f"loan{'s' if len(loans) != 1 else ''}."
+    ]
+    if cuts:
+        messages.append(
+            f"Trimming the categories below frees {fmt(freed, cur)} a month "
+            f"({fmt(freed * 12, cur)} a year) to put toward your debt."
+        )
+    if plan:
+        messages.append(
+            f"Putting {fmt(available, cur)} a month at your loans (highest interest "
+            f"first) clears everything in {plan['months']} months — by "
+            f"{ordered[-1]['payoff_date']}."
+        )
+        if baseline:
+            saved = baseline["total_interest"] - plan["total_interest"]
+            if saved > 1:
+                messages.append(
+                    f"That's {fmt(saved, cur)} less interest than paying only the "
+                    f"minimums, and {baseline['months'] - plan['months']} months sooner."
+                )
+        else:
+            messages.append(
+                "Minimum payments alone would never clear this debt — the plan below does."
+            )
+    else:
+        messages.append(
+            "Even with these cuts the payments can't outrun the interest yet. "
+            "Free up more each month or renegotiate the rate."
+        )
+
+    return {
+        "has_debt": True,
+        "total_debt": round(total_debt, 2),
+        "cuts": cuts,
+        "freed_monthly": round(freed, 2),
+        "freed_yearly": round(freed * 12, 2),
+        "total_minimums": round(total_minimums, 2),
+        "available_monthly": round(available, 2),
+        "loans_ordered": ordered,
+        "debt_free_months": plan["months"] if plan else None,
+        "debt_free_date": ordered[-1]["payoff_date"] if plan else None,
+        "total_interest": round(plan["total_interest"], 2) if plan else None,
+        "baseline_interest": round(baseline["total_interest"], 2) if baseline else None,
+        "interest_saved": round(baseline["total_interest"] - plan["total_interest"], 2)
+        if (plan and baseline)
+        else None,
+        "messages": messages,
     }

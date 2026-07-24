@@ -735,14 +735,25 @@ input[type="file"] {
   background: linear-gradient(90deg, var(--green-600), var(--green-900));
 }
 
-.goal-block {
+.goal-block,
+.loan-block {
   padding-bottom: 1rem;
   margin-bottom: 0.6rem;
   border-bottom: 1px solid var(--line);
 }
 
-.goal-block:last-child {
+.goal-block:last-child,
+.loan-block:last-child {
   border-bottom: none;
+}
+
+.loan-block .loan-pay-form {
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.loan-block .loan-pay-form input[type="number"] {
+  width: 110px;
 }
 
 /* --- Auth --- */

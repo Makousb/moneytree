@@ -44,6 +44,11 @@ JavaScript (Chart.js).
 - **Recurring transactions** — schedule rent, salary, or subscriptions once
   (weekly/monthly/yearly) and MoneyTree records them automatically when they
   come due, catching up any missed occurrences; pause or delete anytime
+- **Loan tracking & payoff plans** — track each loan's balance, total paid, and
+  the interest accruing on it. The payoff planner (Python analytics service)
+  looks at your monthly spending, flags over-budget and discretionary
+  categories to trim, and builds an avalanche repayment schedule showing your
+  debt-free date and the interest you'd save versus paying only the minimums
 
 ### Roadmap
 

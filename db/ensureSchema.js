@@ -101,6 +101,35 @@ const SCHEMA_SQL = `
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
+
+  -- Loans/debts. principal is the balance when tracking starts (amount owed
+  -- now, or amount borrowed for a brand-new loan); interest accrues monthly on
+  -- the running balance from start_date, reduced by logged loan_payments.
+  -- Amounts are base currency.
+  CREATE TABLE IF NOT EXISTS loans (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    lender TEXT,
+    principal NUMERIC(12, 2) NOT NULL CHECK (principal >= 0),
+    apr NUMERIC(6, 3) NOT NULL DEFAULT 0 CHECK (apr >= 0),
+    minimum_payment NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (minimum_payment >= 0),
+    start_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE TABLE IF NOT EXISTS loan_payments (
+    id SERIAL PRIMARY KEY,
+    loan_id INTEGER NOT NULL REFERENCES loans(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+    paid_on DATE NOT NULL DEFAULT CURRENT_DATE,
+    note TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_loan_payments_loan
+    ON loan_payments (loan_id, paid_on);
 `;
 
 const DEFAULT_CATEGORIES = [
